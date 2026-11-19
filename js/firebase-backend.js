@@ -1,6 +1,6 @@
 // Real backend: Google sign-in + Cloud Firestore.
 // Security is enforced server-side by firestore.rules; the checks here are only for nicer messages.
-import { heads, pick } from './backend.js';
+import { heads, pick, MAX_COFFEES } from './backend.js';
 
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 
@@ -18,18 +18,21 @@ export async function create(C) {
 
   const allowed = (u) => u && u.emailVerified && (u.email || '').toLowerCase().endsWith('@' + domain);
   const toDate = (t) => (t && t.toDate ? t.toDate() : null);
+  const ref = (col, id) => F.doc(db, col, id);
+  const coffeeRef = ref('prizes', 'coffee');
+
+  async function coffeeCount() {
+    const s = await F.getDoc(coffeeRef);
+    return s.exists() ? s.data().count || 0 : 0;
+  }
 
   return {
     demo: false,
 
-    /** cb(user | null, errorMessage?) */
+    /** cb(user | null, errorCode?) — errorCode 'domain' when a non-company account signed in. */
     onUser(cb) {
       return A.onAuthStateChanged(auth, async (u) => {
-        if (u && !allowed(u)) {
-          await A.signOut(auth);
-          cb(null, `Please sign in with your @${domain} Google account.`);
-          return;
-        }
+        if (u && !allowed(u)) { await A.signOut(auth); cb(null, 'domain'); return; }
         cb(u ? { uid: u.uid, email: u.email, name: u.displayName || '' } : null);
       });
     },
@@ -42,23 +45,32 @@ export async function create(C) {
 
     signOut: () => A.signOut(auth),
 
+    /** Everything the RSVP flow needs after sign-in, in one go. */
     async load(user) {
-      const snap = await F.getDoc(F.doc(db, 'rsvps', user.uid));
-      return snap.exists() ? pick(snap.data()) : null;
+      const [r, s, coffees] = await Promise.all([
+        F.getDoc(ref('rsvps', user.uid)),
+        F.getDoc(ref('spins', user.uid)),
+        coffeeCount().catch(() => MAX_COFFEES),
+      ]);
+      return {
+        rsvp: r.exists() ? pick(r.data()) : null,
+        spin: s.exists() ? { prize: s.data().prize, song: s.data().song || '' } : null,
+        coffees,
+      };
     },
 
     /** Saves the reply and the anonymous headcount entry in one atomic write. */
-    async save(user, data) {
-      const ref = F.doc(db, 'rsvps', user.uid);
-      const existing = await F.getDoc(ref);
+    async saveRsvp(user, data) {
+      const rRef = ref('rsvps', user.uid);
+      const existing = await F.getDoc(rRef);
       const batch = F.writeBatch(db);
-      batch.set(ref, {
+      batch.set(rRef, {
         ...pick(data),
         email: user.email,
         createdAt: existing.exists() ? existing.data().createdAt : F.serverTimestamp(),
         updatedAt: F.serverTimestamp(),
       });
-      batch.set(F.doc(db, 'counts', user.uid), { n: heads(data) });
+      batch.set(ref('counts', user.uid), { n: heads(data) });
       await batch.commit();
       return { updated: existing.exists() };
     },
@@ -68,13 +80,53 @@ export async function create(C) {
       return snap.data().total || 0;
     },
 
-    /** Organisers only (enforced by the rules). */
-    async listAll() {
-      const qs = await F.getDocs(F.query(F.collection(db, 'rsvps'), F.orderBy('updatedAt', 'desc')));
-      return qs.docs.map((d) => {
-        const r = d.data();
-        return { ...pick(r), email: r.email, createdAt: toDate(r.createdAt), updatedAt: toDate(r.updatedAt) };
+    coffeeCount,
+
+    /**
+     * Stores the one-and-only wheel result. Coffee goes through a transaction with the
+     * shared counter; throws {code:'coffee-gone'} if the 3 coffees ran out meanwhile.
+     */
+    async saveSpin(user, prize) {
+      const sRef = ref('spins', user.uid);
+      const spin = { prize, song: '', at: F.serverTimestamp() };
+      if (prize !== 'coffee') { await F.setDoc(sRef, spin); return; }
+      await F.runTransaction(db, async (tx) => {
+        const c = await tx.get(coffeeRef);
+        const count = c.exists() ? c.data().count || 0 : 0;
+        if (count >= MAX_COFFEES) throw Object.assign(new Error('No coffees left'), { code: 'coffee-gone' });
+        tx.set(sRef, spin);
+        tx.set(coffeeRef, { count: count + 1 });
       });
     },
+
+    saveSong: (user, song) => F.updateDoc(ref('spins', user.uid), { song }),
+
+    savePhoto: (user, data, name) => F.setDoc(ref('photos', user.uid), { data, name, at: F.serverTimestamp() }),
+
+    async listPhotos(max = 40) {
+      const qs = await F.getDocs(F.query(F.collection(db, 'photos'), F.orderBy('at', 'desc'), F.limit(max)));
+      return qs.docs.map((d) => ({ id: d.id, data: d.data().data, name: d.data().name || '' }));
+    },
+
+    // ── Organisers only (enforced by the rules) ──
+    async listAll() {
+      const [rs, ss] = await Promise.all([
+        F.getDocs(F.query(F.collection(db, 'rsvps'), F.orderBy('updatedAt', 'desc'))),
+        F.getDocs(F.collection(db, 'spins')),
+      ]);
+      const spins = {};
+      ss.docs.forEach((d) => { spins[d.id] = d.data(); });
+      return rs.docs.map((d) => {
+        const r = d.data();
+        const s = spins[d.id] || {};
+        return {
+          id: d.id, ...pick(r), email: r.email,
+          prize: s.prize || '', song: s.song || '',
+          createdAt: toDate(r.createdAt), updatedAt: toDate(r.updatedAt),
+        };
+      });
+    },
+
+    deletePhoto: (id) => F.deleteDoc(ref('photos', id)),
   };
 }

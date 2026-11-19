@@ -1,11 +1,14 @@
 rules_version = '2';
 
-// ZD Christmas 2026 RSVP – who may read and write what.
+// Christmas Unfold RSVP – who may read and write what.
 // Paste into Firebase console → Firestore Database → Rules → Publish
 // (or deploy with `firebase deploy --only firestore:rules`).
 //
-//  rsvps/{uid}      one reply per person; only that person and organisers can read it
-//  counts/{uid}     {n: 0|1|2} per person, no names; any colleague can read it for the headcount
+//  rsvps/{uid}         one reply per person; only that person and organisers can read it
+//  counts/{uid}        {n: 0|1|2} per person, no names; any colleague can read it for the headcount
+//  spins/{uid}         the person's single wheel result (+ song if they won one)
+//  prizes/coffee       {count} free coffees given out; never more than 3
+//  photos/{uid}        small JPEG polaroid of people who won the photo; any colleague can see them
 //  organisers/{email}  add a document here (any content) to make that account an organiser
 
 service cloud.firestore {
@@ -30,18 +33,18 @@ service cloud.firestore {
       return v is string && v.size() <= max;
     }
 
+    // ── Replies ──────────────────────────────────────────
     function validRsvp(d) {
-      return d.keys().hasOnly(['attending', 'name', 'department', 'plusOne', 'plusOneName',
-                               'dietary', 'message', 'email', 'createdAt', 'updatedAt'])
-        && d.keys().hasAll(['attending', 'name', 'department', 'plusOne', 'plusOneName',
-                            'dietary', 'message', 'email', 'createdAt', 'updatedAt'])
+      return d.keys().hasOnly(['attending', 'name', 'department', 'plusOne', 'message',
+                               'language', 'email', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['attending', 'name', 'department', 'plusOne', 'message',
+                            'language', 'email', 'createdAt', 'updatedAt'])
         && d.attending in ['Yes', 'Maybe', 'No']
         && str(d.name, 120) && d.name.size() > 0
         && str(d.department, 120)
         && d.plusOne is bool
-        && str(d.plusOneName, 120)
-        && str(d.dietary, 300)
         && str(d.message, 500)
+        && str(d.language, 10)
         && d.email == request.auth.token.email   // can't reply as someone else
         && d.updatedAt == request.time;
     }
@@ -70,6 +73,66 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['n'])
         && request.resource.data.n == expectedCount(uid);
       allow delete: if isOrganiser();
+    }
+
+    // ── Wheel ────────────────────────────────────────────
+    // One spin per person: the document can be created once and never re-rolled.
+    // Prizes that can never be won are simply not in this list.
+    function coffeeCount() {
+      return exists(/databases/$(database)/documents/prizes/coffee)
+        ? get(/databases/$(database)/documents/prizes/coffee).data.count : 0;
+    }
+
+    match /spins/{uid} {
+      allow get: if isOwner(uid) || isOrganiser();
+      allow list: if isOrganiser();
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['prize', 'song', 'at'])
+        && request.resource.data.prize in ['song', 'photo', 'coffee', 'bigwin', 'youtube']
+        && request.resource.data.song == ''
+        && request.resource.data.at == request.time
+        // A coffee win must bump the shared counter in the same transaction.
+        && (request.resource.data.prize != 'coffee'
+            || getAfter(/databases/$(database)/documents/prizes/coffee).data.count == coffeeCount() + 1);
+      allow update: if isOwner(uid)
+        && resource.data.prize == 'song'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['song'])
+        && str(request.resource.data.song, 200);
+      allow delete: if isOrganiser();
+    }
+
+    // The counter can only go up by one, only alongside a new coffee spin, and never past 3.
+    function newCoffeeWinner() {
+      return !exists(/databases/$(database)/documents/spins/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/spins/$(request.auth.uid)).data.prize == 'coffee';
+    }
+
+    match /prizes/coffee {
+      allow read: if isZitro();
+      allow create: if isZitro()
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == 1
+        && newCoffeeWinner();
+      allow update: if isZitro()
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == resource.data.count + 1
+        && request.resource.data.count <= 3
+        && newCoffeeWinner();
+      allow delete: if isOrganiser();
+    }
+
+    // ── Polaroids ────────────────────────────────────────
+    match /photos/{uid} {
+      allow read: if isZitro();
+      allow create, update: if isOwner(uid)
+        && get(/databases/$(database)/documents/spins/$(uid)).data.prize == 'photo'
+        && request.resource.data.keys().hasOnly(['data', 'name', 'at'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 150000
+        && request.resource.data.data.matches('data:image/jpeg;base64,[A-Za-z0-9+/=]+')
+        && str(request.resource.data.name, 120)
+        && request.resource.data.at == request.time;
+      allow delete: if isOwner(uid) || isOrganiser();
     }
 
     match /organisers/{email} {

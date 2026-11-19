@@ -14,6 +14,22 @@ export function heads(d) {
   return d.attending === 'Yes' ? (d.plusOne ? 2 : 1) : 0;
 }
 
+/** Wheel prizes that can actually be stored. Must match the list in firestore.rules. */
+export const WINNABLE = ['song', 'photo', 'coffee', 'bigwin', 'youtube'];
+export const MAX_COFFEES = 3;
+
+/** Keep only the reply fields a person can edit, with the right types. */
+export function pick(d) {
+  return {
+    attending: String(d.attending || ''),
+    name: String(d.name || ''),
+    department: String(d.department || ''),
+    plusOne: !!d.plusOne,
+    message: String(d.message || ''),
+    language: String(d.language || 'en'),
+  };
+}
+
 /** Turns Firebase error codes into something a colleague can act on ('' = say nothing). */
 export function friendly(err) {
   const code = (err && err.code) || '';
@@ -24,19 +40,4 @@ export function friendly(err) {
   if (code === 'permission-denied') return 'You don\'t have access to this.';
   if (code === 'unavailable') return 'Could not reach the server. Please check your connection and try again.';
   return (err && err.message) || 'Something went wrong. Please try again.';
-}
-
-export const FIELDS =['attending', 'name', 'department', 'plusOne', 'plusOneName', 'dietary', 'message'];
-
-/** Keep only the fields a person can edit, with the right types. */
-export function pick(d) {
-  return {
-    attending: String(d.attending || ''),
-    name: String(d.name || ''),
-    department: String(d.department || ''),
-    plusOne: !!d.plusOne,
-    plusOneName: String(d.plusOneName || ''),
-    dietary: String(d.dietary || ''),
-    message: String(d.message || ''),
-  };
 }

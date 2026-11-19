@@ -16,8 +16,15 @@ window.RSVP_CONFIG = {
   // Only Google accounts on this domain can sign in and reply.
   allowedDomain: 'zitrogames.com',
 
-  title: 'ZD Christmas 2026',
-  tagline: 'An evening of good food, music and celebrating the year together.',
+  title: 'Christmas Unfold',
+  tagline: 'ZD Christmas 2026. Good food, drinks and celebrating the year together.',
+
+  // Price per person in euros (menu: starters to share, a main, 2 drinks).
+  price: 26,
+
+  // Optional: a YouTube Data API v3 key for the "Random YouTube video" prize.
+  // Without it, the prize opens a random YouTube search instead of a single video.
+  youtubeApiKey: '',
 
   // Event time with its UTC offset (+01:00 = Spanish winter time), and the
   // time zone used to display it, so it shows correctly on any device.

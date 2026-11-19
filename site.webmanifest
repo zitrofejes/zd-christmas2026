@@ -1,0 +1,13 @@
+{
+  "name": "Christmas Unfold",
+  "short_name": "Xmas Unfold",
+  "description": "ZD Christmas 2026 – RSVP and spin the wheel.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a0d2b",
+  "theme_color": "#1a0d2b",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
