@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZD Christmas 2026 · RSVP</title>
+  <meta name="description" content="RSVP for the ZD Christmas party 2026." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="snow" aria-hidden="true"></canvas>
+
+  <main class="wrap">
+    <header class="hero">
+      <p class="eyebrow">You're invited</p>
+      <h1 id="event-title">ZD Christmas 2026</h1>
+      <p class="tagline" id="event-tagline"></p>
+
+      <ul class="details">
+        <li><span class="ico" aria-hidden="true">📅</span><span id="event-date"></span></li>
+        <li><span class="ico" aria-hidden="true">🕖</span><span id="event-time"></span></li>
+        <li><span class="ico" aria-hidden="true">📍</span><span id="event-venue"></span></li>
+      </ul>
+
+      <div class="countdown" id="countdown" aria-live="polite">
+        <div><b id="cd-d">–</b><span>days</span></div>
+        <div><b id="cd-h">–</b><span>hours</span></div>
+        <div><b id="cd-m">–</b><span>min</span></div>
+        <div><b id="cd-s">–</b><span>sec</span></div>
+      </div>
+
+      <p class="headcount" id="headcount" hidden></p>
+    </header>
+
+    <section class="card" id="form-card">
+      <h2>Will you join us?</h2>
+      <p class="muted" id="deadline-note"></p>
+
+      <form id="rsvp" novalidate>
+        <fieldset class="choices">
+          <legend class="sr-only">Are you attending?</legend>
+          <label class="choice">
+            <input type="radio" name="attending" value="Yes" required />
+            <span><em aria-hidden="true">🎉</em>Count me in</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="attending" value="Maybe" />
+            <span><em aria-hidden="true">🤔</em>Maybe</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="attending" value="No" />
+            <span><em aria-hidden="true">🎄</em>Can't make it</span>
+          </label>
+        </fieldset>
+
+        <div class="grid">
+          <label class="field">
+            <span>Full name</span>
+            <input name="name" autocomplete="name" required maxlength="120" />
+          </label>
+          <label class="field">
+            <span>Work email</span>
+            <input name="email" type="email" autocomplete="email" required maxlength="160" />
+          </label>
+          <label class="field full">
+            <span>Team / department <i>(optional)</i></span>
+            <input name="department" maxlength="120" />
+          </label>
+        </div>
+
+        <div class="when-coming" hidden>
+          <label class="toggle" id="plusone-wrap">
+            <input type="checkbox" name="plusOne" />
+            <span class="switch" aria-hidden="true"></span>
+            <span>I'm bringing a plus one</span>
+          </label>
+          <label class="field plusone-name" hidden>
+            <span>Plus one's name</span>
+            <input name="plusOneName" maxlength="120" />
+          </label>
+          <label class="field">
+            <span>Dietary requirements or allergies <i>(optional)</i></span>
+            <input name="dietary" placeholder="e.g. vegetarian, gluten-free, nut allergy" maxlength="300" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Anything else? <i>(optional)</i></span>
+          <textarea name="message" rows="3" maxlength="500" placeholder="A song request, a question, or just a hello"></textarea>
+        </label>
+
+        <!-- honeypot -->
+        <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+        <p class="error" id="error" role="alert" hidden></p>
+
+        <button type="submit" class="btn" id="submit">
+          <span class="btn-label">Send my RSVP</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+        <p class="muted small">Already replied? Submit again with the same email to update your answer.</p>
+      </form>
+    </section>
+
+    <section class="card thanks" id="thanks" hidden tabindex="-1">
+      <div class="big" id="thanks-emoji">🎉</div>
+      <h2 id="thanks-title">See you there!</h2>
+      <p id="thanks-text"></p>
+      <div class="actions">
+        <a class="btn ghost" id="add-cal" download="zd-christmas-2026.ics">Add to calendar</a>
+        <button class="btn ghost" id="again" type="button">Change my answer</button>
+      </div>
+    </section>
+
+    <footer class="foot">Questions? Contact <a id="contact"></a></footer>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
