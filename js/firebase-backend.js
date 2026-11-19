@@ -128,5 +128,38 @@ export async function create(C) {
     },
 
     deletePhoto: (id) => F.deleteDoc(ref('photos', id)),
+
+    /** Organiser correction of a reply; the headcount entry is kept in step. */
+    async updateReply(id, data) {
+      const d = pick(data);
+      const batch = F.writeBatch(db);
+      batch.update(ref('rsvps', id), {
+        attending: d.attending, name: d.name, department: d.department,
+        plusOne: d.plusOne, message: d.message, updatedAt: F.serverTimestamp(),
+      });
+      batch.set(ref('counts', id), { n: heads(d) });
+      await batch.commit();
+    },
+
+    updateSong: (id, song) => F.updateDoc(ref('spins', id), { song }),
+
+    /** Lets the person spin again: removes their spin and photo, and hands back a won coffee. */
+    resetSpin: (id) => removeSpin(id, false),
+
+    /** Removes everything stored for this person. */
+    deleteReply: (id) => removeSpin(id, true),
   };
+
+  async function removeSpin(id, everything) {
+    await F.runTransaction(db, async (tx) => {
+      // Firestore transactions need every read before any write.
+      const s = await tx.get(ref('spins', id));
+      const coffee = s.exists() && s.data().prize === 'coffee';
+      const c = coffee ? await tx.get(coffeeRef) : null;
+      if (c && c.exists()) tx.update(coffeeRef, { count: Math.max(0, (c.data().count || 0) - 1) });
+      if (s.exists()) tx.delete(ref('spins', id));
+      tx.delete(ref('photos', id));
+      if (everything) { tx.delete(ref('rsvps', id)); tx.delete(ref('counts', id)); }
+    });
+  }
 }

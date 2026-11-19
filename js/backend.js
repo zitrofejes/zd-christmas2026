@@ -3,7 +3,9 @@
 
 export async function getBackend(C) {
   const f = C.firebase || {};
-  const mod = f.apiKey && f.projectId
+  // On your own machine, add ?demo to the URL to try things without touching real data.
+  const forceDemo = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /[?&]demo\b/.test(location.search);
+  const mod = f.apiKey && f.projectId && !forceDemo
     ? await import('./firebase-backend.js')
     : await import('./demo-backend.js');
   return mod.create(C);

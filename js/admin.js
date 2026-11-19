@@ -70,7 +70,7 @@ function render() {
   if (!list.length) {
     const tr = document.createElement('tr');
     const c = td(rows.length ? 'No replies match.' : 'No replies yet.', 'empty');
-    c.colSpan = 10;
+    c.colSpan = 11;
     tr.append(c);
     body.replaceChildren(tr);
     return;
@@ -87,9 +87,89 @@ function render() {
       td(r.attending !== 'No' && r.plusOne ? 'Yes' : ''),
       td(r.message), td(PRIZE[r.prize] || ''), td(r.song), td(LANG[r.language] || r.language),
       td(fmt(r.updatedAt), 'nowrap'),
+      actionsCell(r),
     );
     return tr;
   }));
+}
+
+// ── Edit / delete ────────────────────────────────────────
+function actionsCell(r) {
+  const c = td('', 'row-actions');
+  const edit = document.createElement('button');
+  edit.type = 'button'; edit.textContent = 'Edit';
+  edit.addEventListener('click', () => openEdit(r));
+  const del = document.createElement('button');
+  del.type = 'button'; del.className = 'danger'; del.textContent = 'Delete';
+  del.addEventListener('click', () => deleteReply(r));
+  c.append(edit, del);
+  return c;
+}
+
+const dlg = $('#edit-dialog');
+const form = $('#edit-form');
+let editing = null;
+
+function openEdit(r) {
+  editing = r;
+  const f = form.elements;
+  $('#edit-title').textContent = 'Edit ' + (r.name || 'reply');
+  $('#edit-email').textContent = r.email;
+  f.name.value = r.name || '';
+  f.department.value = r.department || '';
+  f.attending.value = r.attending || 'Maybe';
+  f.plusOne.checked = !!r.plusOne;
+  f.message.value = r.message || '';
+  f.song.value = r.song || '';
+  $('#song-field').hidden = r.prize !== 'song';
+  $('#spin-box').hidden = !r.prize;
+  $('#spin-label').textContent = PRIZE[r.prize] || '';
+  $('#edit-error').hidden = true;
+  dlg.showModal();
+  f.name.focus();
+}
+
+function editError(msg) { const e = $('#edit-error'); e.textContent = msg || ''; e.hidden = !msg; }
+
+$('#edit-cancel').addEventListener('click', () => dlg.close());
+
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const f = form.elements;
+  const data = {
+    attending: f.attending.value,
+    name: f.name.value.trim(),
+    department: f.department.value.trim(),
+    plusOne: f.attending.value !== 'No' && f.plusOne.checked,
+    message: f.message.value.trim(),
+    language: editing.language,
+  };
+  if (!data.name) { f.name.focus(); editError('Name can\'t be empty.'); return; }
+  const btn = $('#edit-save');
+  btn.disabled = true; btn.classList.add('loading');
+  try {
+    await backend.updateReply(editing.id, data);
+    const song = f.song.value.trim();
+    if (editing.prize === 'song' && song !== (editing.song || '')) await backend.updateSong(editing.id, song);
+    dlg.close();
+    await load();
+  } catch (e) {
+    editError(friendly(e));
+  } finally {
+    btn.disabled = false; btn.classList.remove('loading');
+  }
+});
+
+$('#reset-spin').addEventListener('click', async () => {
+  const r = editing;
+  const extra = r.prize === 'coffee' ? ' Their coffee goes back into the pool.' : r.prize === 'photo' ? ' Their photo is deleted.' : '';
+  if (!confirm(`Reset ${r.name}'s wheel spin so they can spin again?${extra}`)) return;
+  try { await backend.resetSpin(r.id); dlg.close(); await load(); } catch (e) { editError(friendly(e)); }
+});
+
+async function deleteReply(r) {
+  if (!confirm(`Delete ${r.name || r.email}'s reply, wheel spin and photo?\n\nThis can't be undone. They can reply again from scratch.`)) return;
+  try { await backend.deleteReply(r.id); await load(); } catch (e) { alert(friendly(e)); }
 }
 
 async function renderPhotos() {

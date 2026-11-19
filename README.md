@@ -19,6 +19,9 @@ Zitro Google account; replies are stored in **Cloud Firestore** (Firebase free t
 7. **Done**: summary, add to calendar, and the YouTube link if you won one.
 
 The organiser page is at **/admin.html**: totals, coffee winners, songs, a CSV export and the polaroids.
+Each reply has **Edit** (name, team, answer, plus one, message, song, and *Reset spin* so the
+person can spin again) and **Delete** (removes their reply, spin and photo, and hands a won
+coffee back to the pool).
 
 ```
 index.html, admin.html      the two pages
@@ -67,6 +70,8 @@ python -m http.server 8000
 ```
 
 Open http://localhost:8000 (add `?reset` to start over) and http://localhost:8000/admin.html.
+Once Firebase is configured, add `?demo` to a localhost URL (e.g. `http://localhost:8000/admin.html?demo`)
+to keep using the demo data instead of the real database.
 
 ## 1. Firebase (about 15 minutes, once)
 
@@ -137,7 +142,9 @@ After changing artwork, run `python tools/make_images.py`.
   Missing keys fall back to English.
 - **Wheel odds:** `decide()` in `js/app.js`.
 - **Coffee limit:** `MAX_COFFEES` in `js/backend.js` **and** `<= 3` in `firestore.rules`.
-- **Reset someone's spin:** delete their document in `spins` (and `photos`) in the Firebase console.
+- **Fix or remove a reply, or reset someone's spin:** use Edit / Delete on the organiser page.
+- **Rules:** whenever `firestore.rules` changes, paste it into *Firestore → Rules → Publish* again.
+  The site and the rules are deployed separately.
 
 ## About the translations
 

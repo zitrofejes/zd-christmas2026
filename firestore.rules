@@ -34,7 +34,7 @@ service cloud.firestore {
     }
 
     // ── Replies ──────────────────────────────────────────
-    function validRsvp(d) {
+    function rsvpShape(d) {
       return d.keys().hasOnly(['attending', 'name', 'department', 'plusOne', 'message',
                                'language', 'email', 'createdAt', 'updatedAt'])
         && d.keys().hasAll(['attending', 'name', 'department', 'plusOne', 'message',
@@ -44,7 +44,11 @@ service cloud.firestore {
         && str(d.department, 120)
         && d.plusOne is bool
         && str(d.message, 500)
-        && str(d.language, 10)
+        && str(d.language, 10);
+    }
+
+    function validRsvp(d) {
+      return rsvpShape(d)
         && d.email == request.auth.token.email   // can't reply as someone else
         && d.updatedAt == request.time;
     }
@@ -61,15 +65,21 @@ service cloud.firestore {
       allow create: if isOwner(uid)
         && validRsvp(request.resource.data)
         && request.resource.data.createdAt == request.time;
-      allow update: if isOwner(uid)
-        && validRsvp(request.resource.data)
-        && request.resource.data.createdAt == resource.data.createdAt;
+      allow update: if request.resource.data.createdAt == resource.data.createdAt
+        && (
+          (isOwner(uid) && validRsvp(request.resource.data))
+          // Organisers can correct a reply, but not move it to another person.
+          || (isOrganiser()
+              && rsvpShape(request.resource.data)
+              && request.resource.data.email == resource.data.email
+              && request.resource.data.updatedAt == request.time)
+        );
       allow delete: if isOrganiser();
     }
 
     match /counts/{uid} {
       allow read: if isZitro();
-      allow create, update: if isOwner(uid)
+      allow create, update: if (isOwner(uid) || isOrganiser())
         && request.resource.data.keys().hasOnly(['n'])
         && request.resource.data.n == expectedCount(uid);
       allow delete: if isOrganiser();
@@ -94,11 +104,11 @@ service cloud.firestore {
         // A coffee win must bump the shared counter in the same transaction.
         && (request.resource.data.prize != 'coffee'
             || getAfter(/databases/$(database)/documents/prizes/coffee).data.count == coffeeCount() + 1);
-      allow update: if isOwner(uid)
+      allow update: if (isOwner(uid) || isOrganiser())
         && resource.data.prize == 'song'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['song'])
         && str(request.resource.data.song, 200);
-      allow delete: if isOrganiser();
+      allow delete: if isOrganiser();   // "reset spin": the person can spin again
     }
 
     // The counter can only go up by one, only alongside a new coffee spin, and never past 3.
@@ -118,6 +128,12 @@ service cloud.firestore {
         && request.resource.data.count == resource.data.count + 1
         && request.resource.data.count <= 3
         && newCoffeeWinner();
+      // Organisers can hand a coffee back (when deleting or resetting a coffee winner).
+      allow update: if isOrganiser()
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count is int
+        && request.resource.data.count >= 0
+        && request.resource.data.count <= 3;
       allow delete: if isOrganiser();
     }
 

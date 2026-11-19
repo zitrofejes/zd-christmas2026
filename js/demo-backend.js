@@ -39,9 +39,12 @@ export async function create() {
   let listener = () => {};
   const signedIn = () => { try { return sessionStorage.getItem(SESSION) === '1'; } catch (e) { return false; } };
   const emit = () => listener(signedIn() ? USER : null);
-  const sampleCoffees = SAMPLE.filter((s) => s.prize === 'coffee').length;
-  const coffees = () => sampleCoffees + (read().spin && read().spin.prize === 'coffee' ? 1 : 0);
+  // Sample colleagues live in memory, so organiser edits work until the page reloads.
+  const day = 86400000;
+  const samples = SAMPLE.map((s, i) => ({ id: 's' + i, ...s, createdAt: new Date(Date.now() - (i + 2) * day), updatedAt: new Date(Date.now() - (i + 1) * day) }));
+  const coffees = () => samples.filter((s) => s.prize === 'coffee').length + (read().spin && read().spin.prize === 'coffee' ? 1 : 0);
   let photos;
+  const findSample = (id) => samples.find((s) => s.id === id);
 
   return {
     demo: true,
@@ -69,7 +72,7 @@ export async function create() {
     async headcount() {
       await wait(200);
       const db = read();
-      return SAMPLE.reduce((n, r) => n + heads(r), 0) + 19 + (db.rsvp ? heads(db.rsvp) : 0);
+      return samples.reduce((n, r) => n + heads(r), 0) + 19 + (db.rsvp ? heads(db.rsvp) : 0);
     },
 
     async coffeeCount() { await wait(150); return coffees(); },
@@ -85,19 +88,19 @@ export async function create() {
 
     async saveSong(user, song) { await wait(300); const db = read(); db.spin.song = song; write(db); },
 
-    async savePhoto(user, data, name) { await wait(400); const db = read(); db.photo = { data, name }; write(db); photos = null; },
+    async savePhoto(user, data, name) { await wait(400); const db = read(); db.photo = { data, name }; write(db); },
 
     async listPhotos() {
       await wait(200);
-      if (!photos) photos = [{ id: 'a', name: 'Ana García', data: samplePhoto(200) }, { id: 'b', name: 'Péter Kovács', data: samplePhoto(30) }];
+      // Photo ids match the reply ids, like in Firestore (photos/{uid}).
+      if (!photos) photos = [{ id: 's0', name: 'Ana García', data: samplePhoto(200) }, { id: 's3', name: 'Péter Kovács', data: samplePhoto(30) }];
       const mine = read().photo;
       return mine ? [{ id: 'demo', ...mine }, ...photos] : photos;
     },
 
     async listAll() {
       await wait();
-      const day = 86400000;
-      const rows = SAMPLE.map((r, i) => ({ id: 's' + i, ...r, createdAt: new Date(Date.now() - (i + 2) * day), updatedAt: new Date(Date.now() - (i + 1) * day) }));
+      const rows = samples.map((r) => ({ ...r }));
       const db = read();
       if (db.rsvp) {
         rows.unshift({ id: 'demo', ...db.rsvp, prize: db.spin ? db.spin.prize : '', song: db.spin ? db.spin.song : '',
@@ -109,6 +112,34 @@ export async function create() {
     async deletePhoto(id) {
       await wait(200);
       if (id === 'demo') { const db = read(); delete db.photo; write(db); }
+      photos = (photos || []).filter((p) => p.id !== id);
+    },
+
+    async updateReply(id, data) {
+      await wait(300);
+      const d = pick(data);
+      const fields = { attending: d.attending, name: d.name, department: d.department, plusOne: d.plusOne, message: d.message };
+      if (id === 'demo') { const db = read(); Object.assign(db.rsvp, fields, { updatedAt: new Date().toISOString() }); write(db); return; }
+      Object.assign(findSample(id), fields, { updatedAt: new Date() });
+    },
+
+    async updateSong(id, song) {
+      await wait(200);
+      if (id === 'demo') { const db = read(); db.spin.song = song; write(db); return; }
+      findSample(id).song = song;
+    },
+
+    async resetSpin(id) {
+      await wait(300);
+      if (id === 'demo') { const db = read(); delete db.spin; delete db.photo; write(db); return; }
+      Object.assign(findSample(id), { prize: '', song: '' });
+      photos = (photos || []).filter((p) => p.id !== id);
+    },
+
+    async deleteReply(id) {
+      await wait(300);
+      if (id === 'demo') { const db = read(); delete db.rsvp; delete db.spin; delete db.photo; write(db); return; }
+      samples.splice(samples.findIndex((s) => s.id === id), 1);
       photos = (photos || []).filter((p) => p.id !== id);
     },
   };

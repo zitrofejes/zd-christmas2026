@@ -38,7 +38,7 @@ window.RSVP_CONFIG = {
   rsvpDeadline: '2026-12-05', // shown on the page; set to '' to hide
 
   allowPlusOne: true,
-  showHeadcount: true, // "23 people are coming so far" (shown after sign-in)
+  showHeadcount: false, // true shows "23 people are coming so far" after sign-in
 
   contactName: 'Ricsi Fejes',
   contactEmail: '', // optional; turns the footer name into a mailto link (this repo may be public)

@@ -62,7 +62,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Name</th><th>Email</th><th>Team</th><th>Answer</th><th>Plus one</th><th>Message</th><th>Prize</th><th>Song</th><th>Language</th><th>Updated</th></tr>
+            <tr><th>Name</th><th>Email</th><th>Team</th><th>Answer</th><th>Plus one</th><th>Message</th><th>Prize</th><th>Song</th><th>Language</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
@@ -74,6 +74,40 @@
     </section>
 
     <footer class="foot"><a href="./">← Back to the RSVP page</a></footer>
+
+    <dialog id="edit-dialog" aria-labelledby="edit-title">
+      <form id="edit-form" novalidate>
+        <h2 id="edit-title">Edit reply</h2>
+        <p class="muted" id="edit-email"></p>
+        <div class="grid">
+          <label class="field"><span>Name</span><input name="name" maxlength="120" required /></label>
+          <label class="field"><span>Team</span><input name="department" maxlength="120" /></label>
+        </div>
+        <label class="field"><span>Answer</span>
+          <select name="attending">
+            <option value="Yes">Coming</option>
+            <option value="Maybe">Maybe</option>
+            <option value="No">Not coming</option>
+          </select>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" name="plusOne" />
+          <span class="switch" aria-hidden="true"></span>
+          <span>Bringing a plus one</span>
+        </label>
+        <label class="field"><span>Message</span><textarea name="message" maxlength="500" rows="3"></textarea></label>
+        <label class="field" id="song-field"><span>Song</span><input name="song" maxlength="200" /></label>
+        <div class="spin-box" id="spin-box">
+          <span>Wheel: <b id="spin-label"></b></span>
+          <button type="button" class="linkish" id="reset-spin">Reset spin (they can spin again)</button>
+        </div>
+        <p class="error" id="edit-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" id="edit-cancel">Cancel</button>
+          <button type="submit" class="btn" id="edit-save"><span class="btn-label">Save</span><span class="spinner" aria-hidden="true"></span></button>
+        </div>
+      </form>
+    </dialog>
   </main>
 
   <script src="config.js"></script>
