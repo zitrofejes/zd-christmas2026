@@ -34,6 +34,8 @@ h1 { font-family: Fraunces, Georgia, serif; font-weight: 700; font-size: clamp(2
 
 .details { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 20px; color: #e8edf3; font-weight: 500; }
 .details li { display: flex; gap: 8px; align-items: center; }
+.details a { color: inherit; text-decoration: underline; text-decoration-color: rgba(255,255,255,.4); text-underline-offset: 3px; }
+.details a:hover { text-decoration-color: var(--gold); }
 
 .countdown { display: inline-grid; grid-template-columns: repeat(4, minmax(64px, 1fr)); gap: 8px; }
 .countdown div { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 10px 6px; }

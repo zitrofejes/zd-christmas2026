@@ -21,11 +21,13 @@ window.RSVP_CONFIG = {
 
   // Event time with its UTC offset (+01:00 = Spanish winter time), and the
   // time zone used to display it, so it shows correctly on any device.
-  start: '2026-12-18T19:00:00+01:00',
-  end: '2026-12-19T00:00:00+01:00',
+  start: '2026-12-11T19:00:00+01:00',
+  end: '2026-12-12T00:00:00+01:00',
   timeZone: 'Europe/Madrid',
 
-  venue: 'Venue to be confirmed',
+  venue: "L'Ovella Negra Marina, Carrer de Zamora 78, Barcelona",
+  // Optional link for the venue line ('' = plain text).
+  venueUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent("L'Ovella Negra Marina, Carrer de Zamora 78, 08018 Barcelona"),
   rsvpDeadline: '2026-12-05', // shown on the page; set to '' to hide
 
   allowPlusOne: true,

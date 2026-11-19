@@ -14,7 +14,16 @@ $('#event-title').textContent = C.title;
 $('#event-tagline').textContent = C.tagline;
 $('#event-date').textContent = start.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
 $('#event-time').textContent = [start, end].map((d) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })).join(' – ');
-$('#event-venue').textContent = C.venue;
+if (C.venueUrl) {
+  const a = document.createElement('a');
+  a.href = C.venueUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = C.venue;
+  $('#event-venue').replaceChildren(a);
+} else {
+  $('#event-venue').textContent = C.venue;
+}
 if (C.rsvpDeadline) {
   const dl = $('#deadline-note');
   dl.textContent = 'Please reply by ' + new Date(C.rsvpDeadline + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: tz }) + '.';
