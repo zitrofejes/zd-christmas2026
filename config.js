@@ -7,10 +7,10 @@ window.RSVP_CONFIG = {
   // Firebase console → Project settings → Your apps → Web app → "SDK setup and configuration".
   // While apiKey is empty the page runs in DEMO MODE (fake data saved in your browser only).
   firebase: {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    appId: '',
+    apiKey: 'AIzaSyBq08Y9pF-3ToJN3OdJ-XzWTGHVOnsWKyE',
+    authDomain: 'christmas-unfold.firebaseapp.com',
+    projectId: 'christmas-unfold',
+    appId: '1:54036825098:web:584a9c0bea47dfd9b3cbf3',
   },
 
   // Only Google accounts on this domain can sign in and reply.
