@@ -1,24 +1,36 @@
 // ─────────────────────────────────────────────────────────────
-//  Edit this file to set the event details.
-//  Everything on the page is driven from here.
+//  Edit this file to set the event details and connect Firebase.
+//  Nothing in here is secret: Firebase web config is meant to be
+//  public. Access is controlled by firestore.rules.
 // ─────────────────────────────────────────────────────────────
 window.RSVP_CONFIG = {
-  // Paste the Web app URL from Apps Script here (see README, step 2).
-  scriptUrl: 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
+  // Firebase console → Project settings → Your apps → Web app → "SDK setup and configuration".
+  // While apiKey is empty the page runs in DEMO MODE (fake data saved in your browser only).
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    appId: '',
+  },
+
+  // Only Google accounts on this domain can sign in and reply.
+  allowedDomain: 'zitrogames.com',
 
   title: 'ZD Christmas 2026',
   tagline: 'An evening of good food, music and celebrating the year together.',
 
-  // Local date/time of the event, ISO format (YYYY-MM-DDTHH:MM).
-  start: '2026-12-18T19:00',
-  end: '2026-12-19T00:00',
+  // Event time with its UTC offset (+01:00 = Spanish winter time), and the
+  // time zone used to display it, so it shows correctly on any device.
+  start: '2026-12-18T19:00:00+01:00',
+  end: '2026-12-19T00:00:00+01:00',
+  timeZone: 'Europe/Madrid',
 
   venue: 'Venue to be confirmed',
   rsvpDeadline: '2026-12-05', // shown on the page; set to '' to hide
 
   allowPlusOne: true,
-  showHeadcount: true, // "23 people are coming so far"
+  showHeadcount: true, // "23 people are coming so far" (shown after sign-in)
 
-  contactName: 'the organising team',
-  contactEmail: '', // optional; turns the footer name into a mailto link
+  contactName: 'Ricsi Fejes',
+  contactEmail: '', // optional; turns the footer name into a mailto link (this repo may be public)
 };
