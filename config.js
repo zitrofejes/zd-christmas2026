@@ -24,7 +24,7 @@ window.RSVP_CONFIG = {
 
   // Optional: a YouTube Data API v3 key for the "Random YouTube video" prize.
   // Without it, the prize opens a random YouTube search instead of a single video.
-  youtubeApiKey: 'AIzaSyBq08Y9pF-3ToJN3OdJ-XzWTGHVOnsWKyE',
+  youtubeApiKey: 'AIzaSyBhNec7slwhNMpc7SwFapx_FgtjXTK_RKw',
 
   // Event time with its UTC offset (+01:00 = Spanish winter time), and the
   // time zone used to display it, so it shows correctly on any device.
